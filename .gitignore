@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+secrets/
+credentials/
+service-account*.json
+service_account*.json
+credentials*.json
+*.pem
+*.key
+id_ed25519*
+id_rsa*
+
+# Runtime state, local data and personally identifiable information
+state.json
+state.tmp
+state.json.*
+data/
+backups/
+exports/
+logs/
+*.log
+
+# Local tooling and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
