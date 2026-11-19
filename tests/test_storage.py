@@ -13,12 +13,20 @@ from tests.helpers import Harness, state_for
 async def test_json_restart_preserves_reservation_pending_registration_and_outbox(
     h: Harness,
 ) -> None:
+    def add_unbound(state: BotState) -> None:
+        state.users["pending"] = User(id="pending", fio="Студент Е")
+
+    await h.repo.transact(add_unbound)
+    request = await h.service.request_registration(1005, "pending", "Тестовый аккаунт Е")
     pub = await h.service.add_tasks(1001, {"3.1": ["а", "б"]})
     await h.service.book(1002, "3.1", session_id=pub.session_id)
     await h.service.confirm(1001, "3.1", "б", session_id=pub.session_id, solver_id="outside")
     restored = await Repository.open(JsonStateStore(h.path))
-    assert await restored.snapshot() == await h.repo.snapshot()
-    assert (await restored.snapshot()).sync.pending["outside"]["outputs"].target == 1
+    loaded = await restored.snapshot()
+    assert loaded == await h.repo.snapshot()
+    assert loaded.sync.pending["outside"]["outputs"].target == 1
+    assert loaded.registrations[request.id].status == "pending"
+    assert loaded.users["pending"].tg_id is None
 
 
 async def test_corrupt_state_is_not_silently_reset(tmp_path) -> None:
