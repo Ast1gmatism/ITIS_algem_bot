@@ -12,9 +12,7 @@ from tests.helpers import ADMIN, GREEN, Harness
 
 async def submit(h: Harness, label: str = "а") -> None:
     state = await h.repo.snapshot()
-    await h.service.confirm(
-        ADMIN, "3.1", label, session_id=state.session_id, solver_id="green"
-    )
+    await h.service.confirm(ADMIN, "3.1", label, session_id=state.session_id, solver_id="green")
 
 
 async def test_ac07_stale_pull_does_not_erase_unsent_increment(h: Harness) -> None:
@@ -67,11 +65,13 @@ async def test_write_failure_survives_restart_and_retries(h: Harness) -> None:
 
 async def test_new_local_revision_during_write_is_not_cleared(h: Harness) -> None:
     started, release = asyncio.Event(), asyncio.Event()
+
     class SlowWrite(MemorySheet):
         async def write_rows(self, patches):
             started.set()
             await release.wait()
             await super().write_rows(patches)
+
     sheet = SlowWrite(list(h.sheet.rows.values()))
     sync = SyncCoordinator(h.repo, sheet, clock=h.clock)
     await h.service.add_tasks(ADMIN, {"3.1": ["а", "б"]})
@@ -90,8 +90,10 @@ async def test_new_local_revision_during_write_is_not_cleared(h: Harness) -> Non
 
 async def test_uncertain_write_and_new_revision_are_recognized_after_restart(h: Harness) -> None:
     written, release = asyncio.Event(), asyncio.Event()
+
     class CommitThenFail(MemorySheet):
         fail_once = True
+
         async def write_rows(self, patches):
             await super().write_rows(patches)
             if self.fail_once:
@@ -99,6 +101,7 @@ async def test_uncertain_write_and_new_revision_are_recognized_after_restart(h: 
                 written.set()
                 await release.wait()
                 raise OSError("synthetic lost acknowledgement")
+
     sheet = CommitThenFail(list(h.sheet.rows.values()))
     await h.service.add_tasks(ADMIN, {"3.1": ["а", "б"]})
     await submit(h, "а")
@@ -118,19 +121,19 @@ async def test_uncertain_write_and_new_revision_are_recognized_after_restart(h: 
 
 async def test_network_read_does_not_hold_state_lock(h: Harness) -> None:
     started, release = asyncio.Event(), asyncio.Event()
+
     class SlowRead(MemorySheet):
         async def read_rows(self):
             started.set()
             await release.wait()
             return await super().read_rows()
+
     sheet = SlowRead(list(h.sheet.rows.values()))
     await h.service.add_tasks(ADMIN, {"3.1": ["а"]})
     state = await h.repo.snapshot()
     operation = asyncio.create_task(SyncCoordinator(h.repo, sheet, clock=h.clock).sync_once())
     await asyncio.wait_for(started.wait(), 2)
-    result = await asyncio.wait_for(
-        h.service.book(GREEN, "3.1", session_id=state.session_id), 2
-    )
+    result = await asyncio.wait_for(h.service.book(GREEN, "3.1", session_id=state.session_id), 2)
     assert result.action == "reserved"
     release.set()
     await operation

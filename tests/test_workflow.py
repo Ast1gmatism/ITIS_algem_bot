@@ -34,6 +34,7 @@ async def test_ac20_window_skips_when_all_green_already_booked(h: Harness) -> No
 async def test_window_skips_unregistered_green_but_they_remain_in_average(h: Harness) -> None:
     def unlink(state):
         state.users["green"].tg_id = None
+
     await h.repo.transact(unlink)
     pub = await h.service.add_tasks(ADMIN, {"3.1": ["а"]})
     await h.service.book(YELLOW, "3.1", session_id=pub.session_id)
@@ -123,9 +124,7 @@ async def test_ac02_default_solver_is_known_reserver(h: Harness) -> None:
 
 async def test_ac14_double_confirmation_is_idempotent(h: Harness) -> None:
     pub = await h.service.add_tasks(ADMIN, {"3.1": ["а"]})
-    first = await h.service.confirm(
-        ADMIN, "3.1", "а", session_id=pub.session_id, solver_id="green"
-    )
+    first = await h.service.confirm(ADMIN, "3.1", "а", session_id=pub.session_id, solver_id="green")
     second = await h.service.confirm(
         ADMIN, "3.1", "а", session_id=pub.session_id, solver_id="green"
     )
@@ -135,9 +134,7 @@ async def test_ac14_double_confirmation_is_idempotent(h: Harness) -> None:
 
 async def test_ac21_outside_without_telegram_can_submit(h: Harness) -> None:
     pub = await h.service.add_tasks(ADMIN, {"3.1": ["а"]})
-    await h.service.confirm(
-        ADMIN, "3.1", "а", session_id=pub.session_id, solver_id="outside"
-    )
+    await h.service.confirm(ADMIN, "3.1", "а", session_id=pub.session_id, solver_id="outside")
     state = await h.repo.snapshot()
     assert state.users["outside"].outputs == 1
     assert state.users["outside"].tg_id is None
@@ -147,9 +144,7 @@ async def test_ac21_outside_without_telegram_can_submit(h: Harness) -> None:
 async def test_ac05_merge_preserves_reservations_and_completions(h: Harness) -> None:
     pub = await h.service.add_tasks(ADMIN, {"3.1": ["а", "б"]})
     await h.service.book(GREEN, "3.1", session_id=pub.session_id)
-    await h.service.confirm(
-        ADMIN, "3.1", "б", session_id=pub.session_id, solver_id="outside"
-    )
+    await h.service.confirm(ADMIN, "3.1", "б", session_id=pub.session_id, solver_id="outside")
     await h.service.add_tasks(GREEN, {"3.1": ["в", "г", "а"]})
     subs = (await h.repo.snapshot()).tasks["3.1"].subtasks
     assert set(subs) == {"а", "б", "в", "г"}
@@ -172,9 +167,7 @@ async def test_ac23_duplicate_add_does_not_ping_or_restart_window(h: Harness) ->
 
 async def test_ac09_clear_preserves_counts_and_unsent_changes(h: Harness) -> None:
     pub = await h.service.add_tasks(ADMIN, {"3.1": ["а"]})
-    await h.service.confirm(
-        ADMIN, "3.1", "а", session_id=pub.session_id, solver_id="green"
-    )
+    await h.service.confirm(ADMIN, "3.1", "а", session_id=pub.session_id, solver_id="green")
     before = await h.repo.snapshot()
     new_session = await h.service.clear(ADMIN)
     after = await h.repo.snapshot()
@@ -189,17 +182,13 @@ async def test_ac18_stale_callbacks_cannot_change_new_session(h: Harness) -> Non
     with pytest.raises(DomainError, match="stale_session"):
         await h.service.book(GREEN, "3.1", session_id=old.session_id)
     with pytest.raises(DomainError, match="stale_session"):
-        await h.service.confirm(
-            ADMIN, "3.1", "а", session_id=old.session_id, solver_id="outside"
-        )
+        await h.service.confirm(ADMIN, "3.1", "а", session_id=old.session_id, solver_id="outside")
 
 
 async def test_ac17_non_admin_cannot_confirm_or_clear(h: Harness) -> None:
     pub = await h.service.add_tasks(ADMIN, {"3.1": ["а"]})
     with pytest.raises(DomainError, match="forbidden"):
-        await h.service.confirm(
-            GREEN, "3.1", "а", session_id=pub.session_id, solver_id="green"
-        )
+        await h.service.confirm(GREEN, "3.1", "а", session_id=pub.session_id, solver_id="green")
     with pytest.raises(DomainError, match="forbidden"):
         await h.service.clear(GREEN)
 
@@ -208,6 +197,7 @@ async def test_ac10_registration_requires_approval(h: Harness) -> None:
     def add_unbound(state):
         user = User(id="new", fio="Студент Е", outputs=1)
         state.users[user.id] = user
+
     await h.repo.transact(add_unbound)
     pub = await h.service.add_tasks(ADMIN, {"3.1": ["а"]})
     request = await h.service.request_registration(1005, "new", "Тестовый аккаунт")
@@ -223,6 +213,7 @@ async def test_ac10_registration_requires_approval(h: Harness) -> None:
 async def test_ac22_two_claims_one_name_only_one_approval(h: Harness) -> None:
     def add_unbound(state):
         state.users["new"] = User(id="new", fio="Студент Е")
+
     await h.repo.transact(add_unbound)
     first = await h.service.request_registration(1005, "new", "Аккаунт А")
     second = await h.service.request_registration(1006, "new", "Аккаунт Б")

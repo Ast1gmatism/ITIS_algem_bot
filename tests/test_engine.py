@@ -1,7 +1,8 @@
 from decimal import Decimal
 
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from algem_bot.config import Policy
 from algem_bot.engine import category, is_planned_open, score, statistics

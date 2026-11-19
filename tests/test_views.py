@@ -33,6 +33,7 @@ async def test_unprivileged_user_cannot_obtain_admin_snapshot(h: Harness) -> Non
 async def test_student_names_are_escaped_for_future_html_transport(h: Harness) -> None:
     def rename(state):
         state.users["green"].fio = "Студент <А> & Б"
+
     await h.repo.transact(rename)
     pub = await h.service.add_tasks(ADMIN, {"3.1": ["а"]})
     await h.service.book(GREEN, "3.1", session_id=pub.session_id)
